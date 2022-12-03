@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
 
-  s.name = "CardScanner"
+  s.name = "Card_Scanner"
   s.version = "0.1.0"
   s.summary = "SwiftUI payment cards scanning tool."
 
