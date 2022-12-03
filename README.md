@@ -5,7 +5,7 @@ Payment card scanning tool
 # Usage - Cocoapods 
 
 ```
-pod 'CardScanner'
+pod 'Card_Scanner'
 ```
 
 # Usage - Swift Package Manager
@@ -14,7 +14,7 @@ Once you have your Swift package set up, adding CardScanner as a dependency is a
 
 ```
 dependencies: [
-    .package(url: "https://github.com/michzio/CardScanner.git", .upToNextMajor(from: "0.0.9"))
+    .package(url: "https://github.com/michzio/CardScanner.git", .upToNextMajor(from: "0.1.0"))
 ]
 ```
 
@@ -54,3 +54,5 @@ dependencies: [
             }
 )
 ```
+
+![alt text](cardscanner-test.gif)
