@@ -1,0 +1,16 @@
+PODS:
+  - CardScanner (0.1.0)
+
+DEPENDENCIES:
+  - CardScanner (from `..`)
+
+EXTERNAL SOURCES:
+  CardScanner:
+    :path: ".."
+
+SPEC CHECKSUMS:
+  CardScanner: b7ca6ab803395f58bb6d303d5607fdaae7b04a2f
+
+PODFILE CHECKSUM: 34b64a143513d83220d4b623e7e440a3f19b3bba
+
+COCOAPODS: 1.11.3
