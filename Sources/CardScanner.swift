@@ -9,15 +9,33 @@ public struct CardScanner: UIViewControllerRepresentable {
         let font: UIFont
         let accentColor: UIColor
         let watermarkWidth: CGFloat
+        let watermarkHeight: CGFloat
+        let drawBoxes: Bool
 
-        public init(watermarkText: String, font: UIFont, accentColor: UIColor, watermarkWidth: CGFloat) {
+        public init(
+            watermarkText: String,
+            font: UIFont,
+            accentColor: UIColor,
+            watermarkWidth: CGFloat,
+            watermarkHeight: CGFloat,
+            drawBoxes: Bool
+        ) {
             self.watermarkText = watermarkText
             self.font = font
             self.accentColor = accentColor
             self.watermarkWidth = watermarkWidth
+            self.watermarkHeight = watermarkHeight
+            self.drawBoxes = drawBoxes
         }
 
-        public static let `default` = Configuration(watermarkText: "CardScanner", font: .systemFont(ofSize: 32), accentColor: .white, watermarkWidth: 200)
+        public static let `default` = Configuration(
+            watermarkText: "Card_Scanner",
+            font: .systemFont(ofSize: 24),
+            accentColor: .white,
+            watermarkWidth: 150,
+            watermarkHeight: 50,
+            drawBoxes: false
+        )
     }
     
     // MARK: - Environment
@@ -47,12 +65,7 @@ public struct CardScanner: UIViewControllerRepresentable {
     }
    
     public func makeUIViewController(context: Context) -> CardScannerController {
-        let scanner = CardScannerController(
-            accentColor: configuration.accentColor,
-            font: configuration.font,
-            watermarkText: configuration.watermarkText,
-            watermarkWidth: configuration.watermarkWidth
-        )
+        let scanner = CardScannerController(configuration: configuration)
         scanner.firstNameSuggestion = firstNameSuggestion
         scanner.lastNameSuggestion = lastNameSuggestion
         scanner.delegate = context.coordinator

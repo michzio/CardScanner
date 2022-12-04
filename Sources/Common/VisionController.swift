@@ -4,10 +4,7 @@ import Vision
 
 public class VisionController: UIViewController {
     
-    let accentColor: UIColor
-    let font: UIFont
-    let watermarkText: String
-    let watermarkWidth: CGFloat
+    let configuration: CardScanner.Configuration
     
     // Settings
     var usesLanguageCorrection: Bool {
@@ -48,12 +45,7 @@ public class VisionController: UIViewController {
     }
     
     lazy var overlayView: ScannerOverlayView = {
-        let overlayView = overlayViewClass.init(
-            accentColor: accentColor,
-            font: font,
-            watermarkText: watermarkText,
-            watermarkWidth: watermarkWidth
-        )
+        let overlayView = overlayViewClass.init(configuration: configuration)
         overlayView.translatesAutoresizingMaskIntoConstraints = false
         overlayView.previewView = previewView
         return overlayView
@@ -91,11 +83,8 @@ public class VisionController: UIViewController {
     var cameraBrightness: Double = 1.0
     var cameraImageBuffer: CVImageBuffer?
 
-    init(accentColor: UIColor, font: UIFont, watermarkText: String, watermarkWidth: CGFloat) {
-        self.accentColor = accentColor
-        self.font = font
-        self.watermarkText = watermarkText
-        self.watermarkWidth = watermarkWidth
+    init(configuration: CardScanner.Configuration) {
+        self.configuration = configuration
 
         super.init(nibName: nil, bundle: nil)
     }
@@ -144,8 +133,12 @@ public class VisionController: UIViewController {
         super.viewWillTransition(to: size, with: coordinator)
         
         print("[Vision Controller] Orientation did change")
-        
-        setupOrientation()
+
+        overlayView.isHidden = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(500)) { [weak self] in
+            self?.setupOrientation()
+            self?.overlayView.isHidden = false
+        }
     }
     
     private func setupOrientation() {
@@ -166,7 +159,7 @@ public class VisionController: UIViewController {
     // MARK: - Setup Views
     
     private func setupPreviewView() {
-        self.view.addSubview(previewView)
+        view.addSubview(previewView)
         // constraint preview view
         previewView.trailingAnchor.constraint(equalTo: view.trailingAnchor).isActive = true
         previewView.leadingAnchor.constraint(equalTo: view.leadingAnchor).isActive = true
@@ -179,7 +172,7 @@ public class VisionController: UIViewController {
     }
     
     private func setupOverlayView() {
-        self.view.addSubview(overlayView)
+        view.addSubview(overlayView)
         // constraint overlay view
         overlayView.trailingAnchor.constraint(equalTo: previewView.trailingAnchor).isActive = true
         overlayView.leadingAnchor.constraint(equalTo: previewView.leadingAnchor).isActive = true
@@ -188,7 +181,7 @@ public class VisionController: UIViewController {
     }
     
     private func setupTorchButton() {
-        self.view.addSubview(torchButton)
+        view.addSubview(torchButton)
         // constraint button
         torchButton.leadingAnchor.constraint(equalTo: previewView.leadingAnchor, constant: 12).isActive = true
         torchButton.topAnchor.constraint(equalTo: previewView.topAnchor, constant: 12).isActive = true
@@ -213,14 +206,14 @@ extension VisionController {
         
         // Starting the capture session is a blocking call. Perform setup using
         // a dedicated serial dispatch queue to prevent blocking the main thread.
-        sessionQueue.async {
-            self.setupCaptureSession()
+        sessionQueue.async { [weak self] in
+            self?.setupCaptureSession()
             
             // Calculate region of interest now that the camera is setup.
-            DispatchQueue.main.async {
+            DispatchQueue.main.async { [weak self] in
                 
                 // Figure out initial orientation
-                self.setupOrientation()
+                self?.setupOrientation()
             }
         }
     }
@@ -248,8 +241,8 @@ extension VisionController {
     }
     
     func startLiveStream() {
-        sessionQueue.sync {
-            self.session.startRunning()
+        sessionQueue.async { [weak self] in
+            self?.session.startRunning()
         }
     }
     
@@ -267,10 +260,10 @@ extension VisionController {
         // down battery usage.
         if device.supportsSessionPreset(.hd4K3840x2160) {
             session.sessionPreset = AVCaptureSession.Preset.hd4K3840x2160
-            self.overlayView.bufferAspectRatio = 3_840.0 / 2_160.0
+            overlayView.bufferAspectRatio = 3_840.0 / 2_160.0
         } else {
             session.sessionPreset = AVCaptureSession.Preset.hd1920x1080
-            self.overlayView.bufferAspectRatio = 1_920.0 / 1_080.0
+            overlayView.bufferAspectRatio = 1_920.0 / 1_080.0
         }
     }
     // Set zoom and autofocus to help focus on very small text.
@@ -344,12 +337,12 @@ extension VisionController {
     @objc open func stopLiveStream() {
         // Stop the camera synchronously to ensure that no further buffers are
         // received. Then update the number view asynchronously.
-        DispatchQueue.main.async {
-            self.toggleTorch(on: false)
+        DispatchQueue.main.async { [weak self] in
+            self?.toggleTorch(on: false)
         }
         
-        sessionQueue.sync {
-            self.session.stopRunning()
+        sessionQueue.sync { [weak self] in
+            self?.session.stopRunning()
         }
     }
 }
@@ -359,11 +352,13 @@ extension VisionController {
 extension VisionController {
     
     private func setupTextRectanglesDetection() {
-       
-        let request = VNDetectTextRectanglesRequest(completionHandler: self.textDetectionHandler)
+
+        let request = VNDetectTextRectanglesRequest(completionHandler: { [weak self] request, error in
+            self?.textDetectionHandler(request: request, error: error)
+        })
         request.reportCharacterBoxes = true
         
-        self.requests.append(request)
+        requests.append(request)
     }
     
     func textDetectionHandler(request: VNRequest, error: Error?) {
@@ -374,10 +369,10 @@ extension VisionController {
         }
         
         // highlighting words and characters
-        DispatchQueue.main.async {
-            self.previewView.layer.sublayers?.removeSubrange(2...)
+        DispatchQueue.main.async { [weak self] in
+            self?.previewView.layer.sublayers?.removeSubrange(2...)
             for observation in observations {
-                self.highlightWord(for: observation)
+                self?.highlightWord(for: observation)
                 // self.highlightLetters(of: observation)
             }
         }
@@ -408,7 +403,9 @@ extension VisionController {
     
     private func setupTextRecognition() {
         
-        let request = VNRecognizeTextRequest(completionHandler: self.textRecognitionHandler)
+        let request = VNRecognizeTextRequest(completionHandler: { [weak self] request, error in
+            self?.textRecognitionHandler(request: request, error: error)
+        })
         
         request.recognitionLevel = recognitionLevel
         request.revision = VNRecognizeTextRequestRevision1
@@ -416,7 +413,7 @@ extension VisionController {
         request.minimumTextHeight = minTextHeight
         request.regionOfInterest = overlayView.regionOfInterest
         
-        self.requests.append(request)
+        requests.append(request)
     }
     
     func textRecognitionHandler(request: VNRequest, error: Error?) {
@@ -426,11 +423,11 @@ extension VisionController {
             return
         }
         
-        DispatchQueue.main.async {
-            self.previewView.layer.sublayers?.removeSubrange(2...)
+        DispatchQueue.main.async { [weak self] in
+            self?.previewView.layer.sublayers?.removeSubrange(2...)
         }
         
-        self.observationsHandler(observations: observations)
+        observationsHandler(observations: observations)
     }
     
     @objc open func observationsHandler(observations: [VNRecognizedTextObservation] ) {
@@ -444,16 +441,14 @@ extension VisionController {
                 /*
                 let range = recognizedText.string.startIndex..<recognizedText.string.endIndex
                 if let observation = try? recognizedText.boundingBox(for: range) {
-                    let box = observation.boundingBox
                     DispatchQueue.main.async {
-                        self.highlightBox(of: box, color: UIColor.green)
+                        self.highlightBox(observation.boundingBox, color: UIColor.green)
                     }
                 }*/
             }
-            
-            let box = observation.boundingBox
-            DispatchQueue.main.async {
-                self.highlightBox(of: box, color: UIColor.white)
+
+            DispatchQueue.main.async { [weak self] in
+                self?.highlightBox(observation.boundingBox, color: UIColor.white)
             }
         }
     }
@@ -497,58 +492,49 @@ extension VisionController {
         let outline = CALayer()
         outline.frame = CGRect(x: x, y: y, width: width, height: height)
         outline.borderWidth = 2.0
-        outline.borderColor = accentColor.cgColor
+        outline.borderColor = configuration.accentColor.cgColor
         
         previewView.layer.addSublayer(outline)
     }
     
     func highlightLetters(of observation: VNTextObservation) {
         
-        guard let boxes = observation.characterBoxes else {
-            return
-        }
+        guard let boxes = observation.characterBoxes else { return }
         
         for box in boxes {
-            self.highlightLetter(of: box)
+            highlightLetter(of: box)
         }
     }
     
     func highlightLetter(of observation: VNRectangleObservation) {
-        
-        highlightBox(of: observation, color: UIColor.white)
+        highlightBox(observation.boundingBox, color: UIColor.white)
     }
     
-    func highlightBox(of observation: VNRectangleObservation, color: UIColor) {
-        
-        let box = observation
-        // let x = box.topLeft.x * imageView.frame.width
-        // let y = (1 - box.topLeft.y) * imageView.frame.height
-        // let width = (box.topRight.x - box.bottomLeft.x) * imageView.frame.size.width
-        // let height = (box.topLeft.y - box.bottomLeft.y) * imageView.frame.size.height
-        let x = box.topLeft.x
-        let y = box.topLeft.y
-        let width = (box.topRight.x - box.bottomLeft.x)
-        let height = (box.topLeft.y - box.bottomLeft.y)
-        
-        highlightBox(of: CGRect(x: x, y: y, width: width, height: height), color: color)
-    }
-    
-    func highlightBox(of rect: CGRect, color: UIColor, lineWidth: CGFloat = 1.0, isTemporary: Bool = true) {
-        
-        func draw() {
-            let x = rect.origin.x * previewView.frame.width
-            let y = (1 - rect.origin.y) * previewView.frame.height
-            let width = rect.width * previewView.frame.width
-            let height = rect.height * previewView.frame.height
-            
-            let box = CGRect(x: x, y: y - 16, width: width, height: height)
-            
+    func highlightBox(_ box: CGRect, color: UIColor, lineWidth: CGFloat = 1.0, isTemporary: Bool = true) {
+        guard configuration.drawBoxes else { return }
+
+        func transform(_ box: CGRect) -> CGRect {
+            let size = previewView.frame.size
+            let roi = overlayView.regionOfInterest
+            let roiX = roi.minX * size.width
+            let roiY = roi.minY * size.height
+            let roiWidth = roi.width * size.width
+            let roiHeight = roi.height * size.height
+            let transform = CGAffineTransform.identity
+                .scaledBy(x: 1, y: -1)
+                .translatedBy(x: roiX / 2, y: -roiY - size.height / 3.5)
+                .scaledBy(x: roiWidth, y: roiHeight)
+
+
+            let transformedBox = box.applying(transform)
+            print("Box vs TransformedBox: ", box, transformedBox, size)
+
+            return transformedBox
+        }
+
+        func draw(_ box: CGRect) {
             let outline = CALayer()
-            
-            let avfTransformedBox = box.applying(overlayView.visionToAVFTransform)
-            let transformedBox = previewView.previewLayer.layerRectConverted(fromMetadataOutputRect: avfTransformedBox)
-            
-            outline.frame = box // transformedBox
+            outline.frame = box
             outline.borderWidth = lineWidth
             outline.borderColor = color.cgColor
             
@@ -560,7 +546,7 @@ extension VisionController {
         }
         
         DispatchQueue.main.async {
-            draw()
+            draw(transform(box))
         }
     }
 }
@@ -569,10 +555,8 @@ extension VisionController: AVCaptureVideoDataOutputSampleBufferDelegate {
     
     public func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         
-        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
-            return
-        }
-        cameraBrightness = self.getBrightness(sampleBuffer: sampleBuffer)
+        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+        cameraBrightness = getBrightness(sampleBuffer: sampleBuffer)
         cameraImageBuffer = pixelBuffer
     
         var requestOptions: [VNImageOption : Any] = [:]
@@ -592,14 +576,14 @@ extension VisionController: AVCaptureVideoDataOutputSampleBufferDelegate {
         // Update region of interest
         self.requests.forEach { request in
             if let request = request as? VNRecognizeTextRequest {
-                request.regionOfInterest = self.overlayView.regionOfInterest
+                request.regionOfInterest = overlayView.regionOfInterest
             } else if let request = request as? VNDetectRectanglesRequest {
-                // request.regionOfInterest = self.overlayView.regionOfInterest
+                // request.regionOfInterest = overlayView.regionOfInterest
             }
         }
         
         do {
-            try imageRequestHandler.perform(self.requests)
+            try imageRequestHandler.perform(requests)
         } catch {
             print(error)
         }
@@ -640,7 +624,7 @@ extension VisionController {
         do {
             try device.lockForConfiguration()
             device.torchMode = on ? .on : .off
-            self.torchButton.isSelected = on
+            torchButton.isSelected = on
             device.unlockForConfiguration()
         } catch {
             print("Torch could not be used")

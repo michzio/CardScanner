@@ -3,17 +3,11 @@ import AVFoundation
 
 class ScannerOverlayView: UIView {
     
-    private let accentColor: UIColor
-    private let font: UIFont
-    private let watermarkText: String
-    private let watermarkWidth: CGFloat
+    private let configuration: CardScanner.Configuration
     
     // MARK: - Init
-    required init(accentColor: UIColor, font: UIFont, watermarkText: String, watermarkWidth: CGFloat) {
-        self.accentColor = accentColor
-        self.font = font
-        self.watermarkText = watermarkText
-        self.watermarkWidth = watermarkWidth
+    required init(configuration: CardScanner.Configuration) {
+        self.configuration = configuration
 
         super.init(frame: .zero)
         setup()
@@ -24,8 +18,8 @@ class ScannerOverlayView: UIView {
     }
     
     private func setup() {
-        self.backgroundColor = UIColor.gray.withAlphaComponent(0.5)
-        self.layer.mask = maskLayer
+        backgroundColor = UIColor.gray.withAlphaComponent(0.5)
+        layer.mask = maskLayer
     }
     
     // MARK: - Mask Layer
@@ -84,10 +78,10 @@ extension ScannerOverlayView {
         setupOrientationAndTransform()
         
         // Update the cutout to match the new ROI.
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
             // Wait for the next run cycle before updating the cutout. This
             // ensures that the preview layer already has its new orientation.
-            self.updateCutout()
+            self?.updateCutout()
         }
     }
     
@@ -195,24 +189,30 @@ extension ScannerOverlayView {
         cornersMask.fillRule = .nonZero
         
         let roundedRect = CAShapeLayer()
-        roundedRect.strokeColor = accentColor.cgColor
+        roundedRect.strokeColor = configuration.accentColor.cgColor
         roundedRect.lineWidth = 6
         roundedRect.path = UIBezierPath(roundedRect: cutout.insetBy(dx: -3, dy: -3), cornerRadius: 10).cgPath
         roundedRect.fillColor = UIColor.clear.cgColor
         roundedRect.mask = cornersMask // remove here to have rounded rect instead of rounded corners
-        self.layer.addSublayer(roundedRect)
+        layer.addSublayer(roundedRect)
     }
     
     func addWatermark() {
-        
+
         let watermark = CATextLayer()
-        watermark.string = watermarkText
-        watermark.foregroundColor = accentColor.cgColor
+        watermark.string = configuration.watermarkText
+        watermark.foregroundColor = configuration.accentColor.cgColor
         watermark.isWrapped = true
         watermark.alignmentMode = .left
         watermark.contentsScale = UIScreen.main.scale
-        watermark.font = CTFontCreateWithName(font.fontName as CFString, font.pointSize, nil)
-        watermark.frame = CGRect(x: self.frame.width - watermarkWidth, y: self.frame.height - 60, width: watermarkWidth, height: 50)
-        self.layer.addSublayer(watermark)
+        watermark.font = CTFontCreateWithName(configuration.font.fontName as CFString, configuration.font.pointSize, nil)
+        watermark.fontSize = configuration.font.pointSize
+        watermark.frame = CGRect(
+            x: frame.width - configuration.watermarkWidth,
+            y: frame.height - 50,
+            width: configuration.watermarkWidth,
+            height: 40
+        )
+        layer.addSublayer(watermark)
     }
 }

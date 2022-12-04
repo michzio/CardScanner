@@ -21,7 +21,7 @@ extension String {
         
         let pattern = "(\\d{4}\\s?\\d{4}\\s?\\d{4}\\s?\\d{4})|(\\d{4}\\s?\\d{6}\\s?\\d{5})|(\\d{4}\\s?\\d{4}\\s?\\d{4}\\s?\\d{2})"
         
-        guard let range = self.range(of: pattern, options: .regularExpression, range: nil, locale: nil) else {
+        guard let range = range(of: pattern, options: .regularExpression, range: nil, locale: nil) else {
             // No exp date found.
             return nil
         }
@@ -44,7 +44,7 @@ extension String {
     func extractExpDate() -> String? {
         let pattern = "(0[1-9]|1[0-2])\\/([0-9]{4}|[0-9]{2})"
         
-        guard let range = self.range(of: pattern, options: .regularExpression, range: nil, locale: nil) else {
+        guard let range = range(of: pattern, options: .regularExpression, range: nil, locale: nil) else {
             // No exp date found.
             return nil
         }
@@ -58,7 +58,7 @@ extension String {
 extension String {
     
     func checkOccurance(of string: String) -> Bool {
-        self.lowercased().contains(string.lowercased())
+        lowercased().contains(string.lowercased())
     }
     
     func checkFullName(firstName: String, lastName: String) -> String? {
@@ -67,10 +67,10 @@ extension String {
         
         var fullName = ""
         
-        if self.checkOccurance(of: firstName) {
+        if checkOccurance(of: firstName) {
             fullName += firstName.uppercased() + " "
         }
-        if self.checkOccurance(of: lastName) {
+        if checkOccurance(of: lastName) {
             fullName += lastName.uppercased()
         }
         
@@ -140,7 +140,7 @@ extension String {
         // as this breaks NSLinguisticTagger from classifying names correctly
         // - remove card brands
         // - remove excessive whitespaces
-        var text = self.components(separatedBy: CharacterSet.decimalDigits).joined()
+        var text = components(separatedBy: CharacterSet.decimalDigits).joined()
         text = text.replacingOccurrences(of: brandsRegex, with: "", options: [.caseInsensitive, .regularExpression])
         text = text.replacingOccurrences(of: "  ", with: " ")
         
@@ -204,7 +204,7 @@ extension String {
         // as this breaks NSLinguisticTagger from classifying names correctly
         // - remove card brands
         // - remove excessive whitespaces
-        var text = self.components(separatedBy: CharacterSet.decimalDigits).joined()
+        var text = components(separatedBy: CharacterSet.decimalDigits).joined()
         text = text.replacingOccurrences(of: brandsRegex, with: "", options: [.caseInsensitive, .regularExpression])
         text = text.replacingOccurrences(of: "  ", with: " ")
         
@@ -280,7 +280,7 @@ extension String {
         (\w{4})\b                # Capture xxxx
         """#
         
-        guard let range = self.range(of: pattern, options: .regularExpression, range: nil, locale: nil) else {
+        guard let range = range(of: pattern, options: .regularExpression, range: nil, locale: nil) else {
             // No phone number found.
             return nil
         }
@@ -342,7 +342,7 @@ extension String {
         
         if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) {
             
-            let range = NSRange(location: 0, length: self.count)
+            let range = NSRange(location: 0, length: count)
             let filteredString = regex.stringByReplacingMatches(in: self, options: .reportProgress, range: range, withTemplate: "")
             return filteredString
         }

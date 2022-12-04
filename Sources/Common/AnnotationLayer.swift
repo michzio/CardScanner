@@ -32,7 +32,7 @@ class AnnotationLayer: CALayer {
         let width = bounds.size.width
         let height = bounds.size.height
         let cgPath = CGMutablePath()
-        for ((pt1, pt2, pt3, pt4), string) in self.results {
+        for ((pt1, pt2, pt3, pt4), string) in results {
             if textFilter.isEmpty || string.contains(textFilter) {
                 cgPath.move(to: CGPoint(x: pt1.x * width, y: pt1.y * height))
                 cgPath.addLine(to: CGPoint(x: pt2.x * width, y: pt2.y * height))
