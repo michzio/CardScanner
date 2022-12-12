@@ -11,6 +11,8 @@ public struct CardScanner: UIViewControllerRepresentable {
         let watermarkWidth: CGFloat
         let watermarkHeight: CGFloat
         let drawBoxes: Bool
+        let localizedCancelButton: String
+        let localizedDoneButton: String
 
         public init(
             watermarkText: String,
@@ -18,7 +20,9 @@ public struct CardScanner: UIViewControllerRepresentable {
             accentColor: UIColor,
             watermarkWidth: CGFloat,
             watermarkHeight: CGFloat,
-            drawBoxes: Bool
+            drawBoxes: Bool,
+            localizedCancelButton: String,
+            localizedDoneButton: String
         ) {
             self.watermarkText = watermarkText
             self.font = font
@@ -26,6 +30,8 @@ public struct CardScanner: UIViewControllerRepresentable {
             self.watermarkWidth = watermarkWidth
             self.watermarkHeight = watermarkHeight
             self.drawBoxes = drawBoxes
+            self.localizedCancelButton = localizedCancelButton
+            self.localizedDoneButton = localizedDoneButton
         }
 
         public static let `default` = Configuration(
@@ -34,7 +40,9 @@ public struct CardScanner: UIViewControllerRepresentable {
             accentColor: .white,
             watermarkWidth: 150,
             watermarkHeight: 50,
-            drawBoxes: false
+            drawBoxes: false,
+            localizedCancelButton: "Cancel",
+            localizedDoneButton: "Done"
         )
     }
     

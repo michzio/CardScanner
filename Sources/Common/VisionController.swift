@@ -341,7 +341,7 @@ extension VisionController {
             self?.toggleTorch(on: false)
         }
         
-        sessionQueue.sync { [weak self] in
+        sessionQueue.async { [weak self] in
             self?.session.stopRunning()
         }
     }

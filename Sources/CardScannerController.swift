@@ -65,7 +65,7 @@ public class CardScannerController : VisionController {
         let button = UIButton()
         button.addTarget(self, action: #selector(doneButtonAction), for: .touchUpInside)
         button.titleLabel?.font = .boldSystemFont(ofSize: 20)
-        button.setTitle("Cancel", for: .normal)
+        button.setTitle(configuration.localizedCancelButton, for: .normal)
         button.setTitleColor(UIColor.white, for: .normal)
         button.translatesAutoresizingMaskIntoConstraints = false
         return button
@@ -87,9 +87,7 @@ public class CardScannerController : VisionController {
     }
 
     @objc func doneButtonAction() {
-        print("Done button tap!")
-
-        if button.title(for: .normal) == "Cancel" {
+        if button.title(for: .normal) == configuration.localizedCancelButton {
             stopLiveStream()
             delegate?.didTapCancel()
         } else {
@@ -284,8 +282,9 @@ public class CardScannerController : VisionController {
         super.stopLiveStream()
         
         DispatchQueue.main.async { [weak self] in
-            self?.button.setTitle("Done", for: .normal)
-            self?.previewView.layer.sublayers?.removeSubrange(2...)
+            guard let strongSelf = self else { return }
+            strongSelf.button.setTitle(strongSelf.configuration.localizedDoneButton, for: .normal)
+            strongSelf.previewView.layer.sublayers?.removeSubrange(2...)
         }
     }
 }
